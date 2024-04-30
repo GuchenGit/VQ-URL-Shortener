@@ -13,20 +13,28 @@ app.use(express.json());
 
 // Connect to the MongoDB database
 mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true, 
+  useNewUrlParser: true,
   useUnifiedTopology: true
 });
 
+app.post('/', (req, res, next) => {
+  console.log(req.body);
+  next();
+});
 
 // Route to create a new shortened URL
-app.post('/shorten', async (req, res) => {
+app.post('/api/shorten', async (req, res) => {
   const { originalUrl } = req.body;
-  const shortUrl = await ShortUrl.create({ originalUrl });
+  const shortUrlData = await ShortUrl.create({ originalUrl });
+  
+  const actualUrl = `${req.protocol}://${req.get('host')}/api/${shortUrlData.short}`;
+  const shortUrl = { ...shortUrlData._doc, actualUrl };
+
   res.status(201).send(shortUrl);
 });
 
 // Route to access a specific shortened URL
-app.get('/:shortUrlId', async (req, res) => {
+app.get('/api/:shortUrlId', async (req, res) => {
   const shortUrl = await ShortUrl.findOne({ short: req.params.shortUrlId });
   if (shortUrl == null) return res.sendStatus(404);
 
@@ -35,6 +43,6 @@ app.get('/:shortUrlId', async (req, res) => {
   res.redirect(shortUrl.originalUrl);
 });
 
-// Set a port for the server to run on or default to 5000
-const PORT = process.env.PORT || 5000;
+// Set a port for the server to run on or default to 5190
+const PORT = process.env.PORT || 5190;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
